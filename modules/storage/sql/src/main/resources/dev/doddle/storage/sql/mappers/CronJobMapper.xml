@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+
+    MIT License
+
+    Copyright (c) 2022 Jamie Hall
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+-->
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.doddle.storage.sql.mappers.CronJobMapper">
+
+    <select id="getAll" resultMap="resultMap">
+        SELECT j.id,
+        j.name,
+        j.description,
+        j.expression,
+        j.next_run_at,
+        j.handler,
+        j.enabled,
+        j.timeout,
+        j.created_at,
+        j.max_retries,
+        j.queue_id,
+        q.name AS queue_name,
+        q.priority AS queue_priority,
+        q.locked_at as queue_locked_at
+        FROM doddle_cron_job j
+        JOIN doddle_queue q ON j.queue_id = q.id
+        ORDER BY j.created_at
+        <if test="pageable != null">
+            LIMIT #{pageable.limit}
+            OFFSET #{pageable.offset}
+        </if>
+    </select>
+
+    <select id="getById" resultMap="resultMap">
+        SELECT j.id,
+               j.name,
+               j.description,
+               j.expression,
+               j.next_run_at,
+               j.handler,
+               j.enabled,
+               j.timeout,
+               j.created_at,
+               j.max_retries,
+               j.queue_id,
+               q.name AS queue_name,
+               q.priority AS queue_priority,
+               q.locked_at as queue_locked_at
+        FROM doddle_cron_job j
+        JOIN doddle_queue q ON j.queue_id = q.id
+        WHERE j.id = #{id}
+    </select>
+
+    <select id="getByName" resultMap="resultMap">
+        SELECT j.id,
+               j.name,
+               j.description,
+               j.expression,
+               j.next_run_at,
+               j.handler,
+               j.enabled,
+               j.timeout,
+               j.created_at,
+               j.max_retries,
+               j.queue_id,
+               q.name AS queue_name,
+               q.priority AS queue_priority,
+               q.locked_at as queue_locked_at
+        FROM doddle_cron_job j
+        JOIN doddle_queue q ON j.queue_id = q.id
+        WHERE j.name = #{name}
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(j.*)
+        FROM doddle_cron_job j
+    </select>
+
+    <delete id="deleteAll">
+        DELETE
+        FROM doddle_cron_job
+    </delete>
+
+    <delete id="delete">
+        DELETE
+        FROM doddle_cron_job
+        WHERE id = #{job.id}
+    </delete>
+
+    <insert id="create">
+        INSERT INTO doddle_cron_job (id,
+                                     name,
+                                     description,
+                                     expression,
+                                     next_run_at,
+                                     handler,
+                                     enabled,
+                                     timeout,
+                                     queue_id,
+                                     max_retries,
+                                     created_at)
+        VALUES (#{job.id},
+                #{job.name},
+                #{job.description},
+                #{job.expression},
+                #{job.nextRunAt},
+                #{job.handler},
+                #{job.enabled},
+                #{job.timeout},
+                #{job.queue.id},
+                #{job.maxRetries},
+                #{job.createdAt}
+        )
+        RETURNING id, expression, next_run_at, handler, enabled, created_at, timeout, queue_id, max_retries
+    </insert>
+
+    <update id="update">
+        UPDATE doddle_cron_job
+        SET expression  = #{job.expression},
+            name        = #{job.name},
+            description = #{job.description},
+            next_run_at = #{job.nextRunAt},
+            handler     = #{job.handler},
+            enabled     = #{job.enabled},
+            timeout     = #{job.timeout},
+            queue_id    = #{job.queue.id},
+            max_retries = #{job.maxRetries}
+        WHERE id = #{job.id}
+    </update>
+
+    <!-- Mapping from columns to properties and vice versa -->
+    <resultMap type="dev.doddle.storage.common.domain.CronJob" id="resultMap">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="expression" column="expression"/>
+        <result property="nextRunAt" column="next_run_at"/>
+        <result property="handler" column="handler"/>
+        <result property="enabled" column="enabled"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="timeout" column="timeout"/>
+        <result property="maxRetries" column="max_retries"/>
+        <association property="queue" javaType="dev.doddle.storage.common.domain.Queue">
+            <id property="id" column="queue_id"/>
+            <result property="name" column="queue_name"/>
+            <result property="priority" column="queue_priority"/>
+            <result property="lockedAt" column="queue_locked_at"/>
+        </association>
+    </resultMap>
+
+</mapper>

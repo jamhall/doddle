@@ -1,0 +1,527 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+
+    MIT License
+
+    Copyright (c) 2022 Jamie Hall
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+-->
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.doddle.storage.sql.mappers.JobMapper">
+
+    <select id="getAll" resultMap="resultMap">
+        <if test="_databaseId == 'postgres'">
+            SELECT j.id,
+                   j.name,
+                   j.identifier,
+                   j.category,
+                   j.handler,
+                   j.payload,
+                   j.state,
+                   j.created_at,
+                   j.completed_at,
+                   j.scheduled_at,
+                   j.discarded_at,
+                   j.executing_at,
+                   j.failed_at,
+                   j.max_retries,
+                   j.retries,
+                   j.timeout,
+                   j.tags,
+                   j.progress_max_value,
+                   j.progress_current_value,
+                   j.error_message,
+                   j.error_throwable,
+                   j.error_stack_trace,
+                   j.queue_id,
+                   q.name AS queue_name,
+                   q.priority as queue_priority,
+                   q.locked_at as queue_locked_at
+            FROM doddle_job j
+            JOIN doddle_queue q ON j.queue_id = q.id
+            <where>
+                <if test="filter.states != null">
+                    AND j.state IN (<foreach item='state' collection='filter.states' separator=','>
+                    #{state}::doddle_job_state
+                </foreach>)
+                </if>
+                <if test="filter.queues != null">
+                    AND q.name IN (<foreach item='queue' collection='filter.queues' separator=','>
+                    #{queue}
+                </foreach>)
+                </if>
+                <if test="filter.tags != null">
+                    <![CDATA[
+                       AND j.tags @> #{filter.tags,typeHandler=dev.doddle.storage.sql.handlers.ListArrayTypeHandler}
+                    ]]>
+                </if>
+                <if test="filter.name != null">
+                    <bind name="pattern" value="'%' + filter.name + '%'" />
+                    AND j.name = #{filter.name}
+                </if>
+                <if test="filter.identifier != null">
+                    AND j.identifier = #{filter.identifier}
+                </if>
+            </where>
+            ORDER BY j.created_at DESC
+            <if test="pageable != null">
+                LIMIT #{pageable.limit}
+                OFFSET #{pageable.offset}
+            </if>
+        </if>
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(j.*)
+        FROM doddle_job j
+        JOIN doddle_queue q ON j.queue_id = q.id
+        <where>
+            <if test="filter.states != null">
+                AND j.state IN (<foreach item='state' collection='filter.states' separator=','>
+                #{state}::doddle_job_state
+            </foreach>)
+            </if>
+            <if test="filter.queues != null">
+                AND q.name IN (<foreach item='queue' collection='filter.queues' separator=','>
+                #{queue}
+            </foreach>)
+            </if>
+            <if test="filter.tags != null">
+                <![CDATA[
+                       AND j.tags @> #{filter.tags,typeHandler=dev.doddle.storage.sql.handlers.ListArrayTypeHandler}
+                ]]>
+            </if>
+            <if test="filter.name != null">
+                <bind name="pattern" value="'%' + filter.name + '%'" />
+                AND j.name = #{filter.name}
+            </if>
+            <if test="filter.identifier != null">
+                AND j.identifier = #{filter.identifier}
+            </if>
+        </where>
+    </select>
+
+    <select id="getById" resultMap="resultMap">
+        SELECT j.id,
+               j.name,
+               j.identifier,
+               j.category,
+               j.handler,
+               j.payload,
+               j.state,
+               j.created_at,
+               j.completed_at,
+               j.scheduled_at,
+               j.discarded_at,
+               j.executing_at,
+               j.failed_at,
+               j.max_retries,
+               j.retries,
+               j.timeout,
+               j.tags,
+               j.progress_max_value,
+               j.progress_current_value,
+               j.error_message,
+               j.error_throwable,
+               j.error_stack_trace,
+               j.queue_id,
+               q.name      as queue_name,
+               q.priority  as queue_priority,
+               q.locked_at as queue_locked_at
+        FROM doddle_job j
+        JOIN doddle_queue q ON j.queue_id = q.id
+        WHERE j.id = #{id}
+    </select>
+
+    <select id="getByIdentifier" resultMap="resultMap">
+        SELECT j.id,
+               j.name,
+               j.identifier,
+               j.category,
+               j.handler,
+               j.payload,
+               j.state,
+               j.created_at,
+               j.completed_at,
+               j.scheduled_at,
+               j.discarded_at,
+               j.executing_at,
+               j.failed_at,
+               j.max_retries,
+               j.retries,
+               j.timeout,
+               j.tags,
+               j.progress_max_value,
+               j.progress_current_value,
+               j.error_message,
+               j.error_throwable,
+               j.error_stack_trace,
+               j.queue_id,
+               q.name      as queue_name,
+               q.priority  as queue_priority,
+               q.locked_at as queue_locked_at
+        FROM doddle_job j
+        JOIN doddle_queue q ON j.queue_id = q.id
+        WHERE j.identifier = #{identifier}
+    </select>
+
+    <select id="getStatistics" resultMap="statisticsResultMap">
+        SELECT COUNT(j.*)                                                      as total,
+               (SELECT COUNT(*) FROM doddle_job j WHERE j.state = 'available') as available,
+               (SELECT COUNT(*) FROM doddle_job j WHERE j.state = 'scheduled') as scheduled,
+               (SELECT COUNT(*) FROM doddle_job j WHERE j.state = 'executing') as executing,
+               (SELECT COUNT(*) FROM doddle_job j WHERE j.state = 'retryable') as retryable,
+               (SELECT COUNT(*) FROM doddle_job j WHERE j.state = 'completed') as completed,
+               (SELECT COUNT(*) FROM doddle_job j WHERE j.state = 'discarded') as discarded,
+               (SELECT COUNT(*) FROM doddle_job j WHERE j.state = 'failed')    as failed
+        FROM doddle_job j
+    </select>
+
+    <select id="getAllTasks" resultType="string">
+        SELECT DISTINCT j.handler
+        FROM doddle_job j
+        ORDER BY j.handler
+    </select>
+
+    <insert id="create">
+        INSERT INTO doddle_job (
+            id,
+            name,
+            identifier,
+            queue_id,
+            category,
+            handler,
+            payload,
+            state,
+            created_at,
+            completed_at,
+            scheduled_at,
+            discarded_at,
+            executing_at,
+            failed_at,
+            max_retries,
+            retries,
+            timeout,
+            tags
+        )
+        VALUES (
+            #{job.id},
+            #{job.name},
+            #{job.identifier},
+            #{job.queue.id},
+            #{job.category}::doddle_job_category,
+            #{job.handler},
+            #{job.data},
+            #{job.state}::doddle_job_state,
+            #{job.createdAt},
+            #{job.completedAt},
+            #{job.scheduledAt},
+            #{job.discardedAt},
+            #{job.executingAt},
+            #{job.failedAt},
+            #{job.maxRetries},
+            #{job.retries},
+            #{job.timeout},
+            #{job.tags, typeHandler=dev.doddle.storage.sql.handlers.ListArrayTypeHandler}
+        )
+        RETURNING id,
+                  name,
+                  identifier,
+                  queue_id,
+                  category,
+                  handler,
+                  payload,
+                  state,
+                  created_at,
+                  completed_at,
+                  scheduled_at,
+                  discarded_at,
+                  executing_at,
+                  failed_at,
+                  max_retries,
+                  retries,
+                  timeout,
+                  tags
+    </insert>
+
+    <update id="update">
+        UPDATE doddle_job
+        <choose>
+            <when test="job.progress == null">
+                SET state = #{job.state}::doddle_job_state,
+                identifier = #{job.identifier},
+                name = #{job.name},
+                payload = #{job.data},
+                completed_at = #{job.completedAt},
+                scheduled_at = #{job.scheduledAt},
+                discarded_at = #{job.discardedAt},
+                executing_at = #{job.executingAt},
+                failed_at = #{job.failedAt},
+                max_retries = #{job.maxRetries},
+                retries = #{job.retries},
+                progress_max_value = null,
+                progress_current_value = null,
+                error_message = #{job.error.message},
+                error_throwable = #{job.error.throwable},
+                error_stack_trace = #{job.error.stackTrace}
+            </when>
+            <otherwise>
+                SET state = #{job.state}::doddle_job_state,
+                name = #{job.name},
+                identifier = #{job.identifier},
+                payload = #{job.data},
+                completed_at = #{job.completedAt},
+                scheduled_at = #{job.scheduledAt},
+                discarded_at = #{job.discardedAt},
+                executing_at = #{job.executingAt},
+                failed_at = #{job.failedAt},
+                max_retries = #{job.maxRetries},
+                retries = #{job.retries},
+                progress_max_value = #{job.progress.maxValue},
+                progress_current_value = #{job.progress.currentValue},
+                error_message = #{job.error.message},
+                error_throwable = #{job.error.throwable},
+                error_stack_trace = #{job.error.stackTrace}
+            </otherwise>
+        </choose>
+        WHERE id = #{job.id}
+        RETURNING id,
+                  name,
+                  identifier,
+                  queue_id,
+                  category,
+                  handler,
+                  payload,
+                  state,
+                  created_at,
+                  completed_at,
+                  scheduled_at,
+                  discarded_at,
+                  executing_at,
+                  failed_at,
+                  max_retries,
+                  retries,
+                  timeout,
+                  tags,
+                  progress_max_value,
+                  progress_current_value,
+                  error_message,
+                  error_throwable,
+                  error_stack_trace
+    </update>
+
+    <delete id="delete">
+        DELETE
+        FROM doddle_job
+        WHERE id = #{job.id}
+    </delete>
+
+    <delete id="deleteAll">
+        DELETE
+        FROM doddle_job j
+        <where>
+            <if test="date != null">
+                j.state = 'completed' AND j.completed_at &lt;= #{date}
+            </if>
+            <if test="date == null">
+                j.state = 'completed'
+            </if>
+        </where>
+
+    </delete>
+
+    <!-- Find jobs to ready for processing -->
+    <select id="enqueue" resultMap="resultMap">
+        <![CDATA[
+        UPDATE doddle_job j
+        SET state = 'available'
+        FROM (SELECT j.id,
+                     j.name,
+                     j.identifier,
+                     j.category,
+                     j.handler,
+                     j.payload,
+                     j.state,
+                     j.created_at,
+                     j.completed_at,
+                     j.scheduled_at,
+                     j.discarded_at,
+                     j.executing_at,
+                     j.failed_at,
+                     j.max_retries,
+                     j.retries,
+                     j.timeout,
+                     j.tags,
+                     j.error_message,
+                     j.error_throwable,
+                     j.error_stack_trace,
+                     j.progress_max_value,
+                     j.progress_current_value,
+                     j.queue_id,
+                     q.name AS queue_name,
+                     q.priority AS queue_priority,
+                     q.locked_at as queue_locked_at
+             FROM doddle_job j
+             JOIN doddle_queue q ON j.queue_id = q.id
+             WHERE scheduled_at <= now()
+             AND state IN ('scheduled', 'failed', 'retryable')
+             AND discarded_at IS NULL
+             AND q.locked_at IS NULL
+             ORDER BY scheduled_at
+             FOR UPDATE SKIP LOCKED
+        ) AS schedulable
+        JOIN doddle_queue q ON schedulable.queue_id = q.id
+        WHERE schedulable.id = j.id
+        RETURNING j.id,
+                  j.name,
+                  j.identifier,
+                  j.category,
+                  j.handler,
+                  j.payload,
+                  j.state,
+                  j.created_at,
+                  j.completed_at,
+                  j.scheduled_at,
+                  j.discarded_at,
+                  j.executing_at,
+                  j.failed_at,
+                  j.max_retries,
+                  j.retries,
+                  j.timeout,
+                  j.tags,
+                  j.error_message,
+                  j.error_throwable,
+                  j.error_stack_trace,
+                  j.progress_max_value,
+                  j.progress_current_value,
+                  j.queue_id,
+                  q.name AS queue_name,
+                  q.priority AS queue_priority,
+                  q.locked_at as queue_locked_at
+        ]]>
+    </select>
+
+    <!-- Pick a job to process -->
+    <select id="pick" resultMap="resultMap">
+        <![CDATA[
+        WITH cte AS (
+            SELECT j.id, j.queue_id
+            FROM doddle_job j
+            LEFT OUTER JOIN doddle_queue q ON j.queue_id = q.id
+            WHERE state = 'available' AND q.locked_at IS NULL
+            ORDER BY j.scheduled_at, q.priority
+            LIMIT 1 FOR
+            UPDATE OF j SKIP LOCKED
+        )
+        UPDATE doddle_job j
+        SET state                  = 'executing',
+            executing_at           = now(),
+            error_stack_trace      = null,
+            error_message          = null,
+            error_throwable        = null,
+            progress_max_value     = null,
+            progress_current_value = null,
+            failed_at              = null,
+            discarded_at           = null
+        FROM cte
+        LEFT OUTER JOIN doddle_queue q ON cte.queue_id = q.id
+        WHERE cte.id = j.id
+        RETURNING j.id,
+                  j.name,
+                  j.identifier,
+                  j.category,
+                  j.handler,
+                  j.payload,
+                  j.state,
+                  j.created_at,
+                  j.completed_at,
+                  j.scheduled_at,
+                  j.discarded_at,
+                  j.executing_at,
+                  j.failed_at,
+                  j.max_retries,
+                  j.retries,
+                  j.timeout,
+                  j.tags,
+                  j.error_message,
+                  j.error_throwable,
+                  j.error_stack_trace,
+                  j.progress_max_value,
+                  j.progress_current_value,
+                  j.queue_id,
+                  q.name AS queue_name,
+                  q.priority AS queue_priority,
+                  q.locked_at as queue_locked_at
+        ]]>
+    </select>
+
+    <resultMap type="dev.doddle.storage.common.domain.JobStatistic" id="statisticsResultMap">
+        <result property="total" column="total"/>
+        <result property="available" column="available"/>
+        <result property="scheduled" column="scheduled"/>
+        <result property="executing" column="executing"/>
+        <result property="retryable" column="retryable"/>
+        <result property="completed" column="completed"/>
+        <result property="discarded" column="discarded"/>
+        <result property="failed" column="failed"/>
+    </resultMap>
+
+    <resultMap type="dev.doddle.storage.common.domain.Job" id="resultMap">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="identifier" column="identifier"/>
+        <result property="category" column="category" typeHandler="dev.doddle.storage.sql.handlers.JobCategoryHandler"/>
+        <result property="handler" column="handler"/>
+        <result property="data" column="payload"/>
+        <result property="state" column="state" typeHandler="dev.doddle.storage.sql.handlers.JobStateHandler"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="completedAt" column="completed_at"/>
+        <result property="scheduledAt" column="scheduled_at"/>
+        <result property="discardedAt" column="discarded_at"/>
+        <result property="executingAt" column="executing_at"/>
+        <result property="failedAt" column="failed_at"/>
+        <result property="maxRetries" column="max_retries"/>
+        <result property="retries" column="retries"/>
+        <result property="timeout" column="timeout"/>
+        <result property="tags" column="tags" typeHandler="dev.doddle.storage.sql.handlers.ListArrayTypeHandler"/>
+
+        <association property="progress" javaType="dev.doddle.storage.common.domain.JobProgress">
+            <result property="currentValue" column="progress_current_value"/>
+            <result property="maxValue" column="progress_max_value"/>
+        </association>
+
+        <association property="error" javaType="dev.doddle.storage.common.domain.JobError">
+            <result property="message" column="error_message"/>
+            <result property="throwable" column="error_throwable"/>
+            <result property="stackTrace" column="error_stack_trace"/>
+        </association>
+
+        <association property="queue" javaType="dev.doddle.storage.common.domain.Queue">
+            <id property="id" column="queue_id"/>
+            <result property="name" column="queue_name"/>
+            <result property="priority" column="queue_priority"/>
+            <result property="lockedAt" column="queue_locked_at"/>
+        </association>
+    </resultMap>
+
+</mapper>

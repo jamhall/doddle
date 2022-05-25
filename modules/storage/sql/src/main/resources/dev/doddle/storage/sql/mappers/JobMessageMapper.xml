@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+
+    MIT License
+
+    Copyright (c) 2022 Jamie Hall
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+-->
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.doddle.storage.sql.mappers.JobMessageMapper">
+
+    <select id="getAll" resultMap="resultMap">
+        SELECT j.id,
+        j.level,
+        j.message,
+        j.error_message,
+        j.error_class,
+        j.error_stack_trace,
+        j.created_at
+        FROM doddle_job_message j
+        <where>
+            j.job_id = #{job.id}
+            <if test="_parameter.containsKey('filter') and filter.levels != null">
+                    AND j.level IN (<foreach item='level' collection='filter.levels' separator=','>
+                    #{level}
+                    </foreach>)
+            </if>
+            <if test="_parameter.containsKey('filter') and filter.message != null">
+                <bind name="pattern" value="'%' + _parameter.filter.message  + '%'"/>
+                AND j.message LIKE #{pattern}
+            </if>
+        </where>
+        ORDER BY j.created_at DESC
+        <if test="_parameter.containsKey('pageable')">
+            <if test="pageable != null">
+                LIMIT #{pageable.limit}
+                OFFSET #{pageable.offset}
+            </if>
+        </if>
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(j.*)
+        FROM doddle_job_message j
+        WHERE j.job_id = #{job.id}
+    </select>
+
+    <delete id="deleteAll">
+        DELETE
+        FROM doddle_job_message j
+        WHERE j.job_id = #{job.id}
+    </delete>
+
+    <insert id="create">
+        INSERT INTO doddle_job_message (job_id,
+                                        id,
+                                        level,
+                                        message,
+                                        error_message,
+                                        error_class,
+                                        error_stack_trace,
+                                        created_at)
+        VALUES (#{job.id},
+                #{message.id},
+                #{message.level},
+                #{message.message},
+                #{message.errorMessage},
+                #{message.errorClass},
+                #{message.errorStackTrace},
+                #{message.createdAt})
+        RETURNING id, level, message, error_message, error_class, error_stack_trace, created_at
+    </insert>
+
+    <!-- Mapping from columns to properties and vice versa -->
+    <resultMap type="dev.doddle.storage.common.domain.JobMessage" id="resultMap">
+        <id property="id" column="id"/>
+        <result property="level" column="level"/>
+        <result property="message" column="message"/>
+        <result property="errorMessage" column="error_message"/>
+        <result property="errorClass" column="error_class"/>
+        <result property="errorStackTrace" column="error_stack_trace"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+</mapper>

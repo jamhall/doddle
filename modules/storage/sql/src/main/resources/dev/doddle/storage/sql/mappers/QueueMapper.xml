@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+
+    MIT License
+
+    Copyright (c) 2022 Jamie Hall
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+-->
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0
+
+    //EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.doddle.storage.sql.mappers.QueueMapper">
+
+    <select id="getAll" resultMap="resultMap">
+        SELECT q.id, q.name, q.priority, q.locked_at
+        FROM doddle_queue q
+        ORDER BY q.priority ASC
+    </select>
+
+    <select id="getById" resultMap="resultMap">
+        SELECT q.id, q.name, q.priority, q.locked_at
+        FROM doddle_queue q
+        WHERE q.id = #{id}
+    </select>
+
+    <select id="getByName" resultMap="resultMap">
+        SELECT q.id, q.name, q.priority, q.locked_at
+        FROM doddle_queue q
+        WHERE q.name = #{name}
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(q.*)
+        FROM doddle_queue q
+    </select>
+
+    <delete id="deleteAll">
+        DELETE
+        FROM doddle_queue
+    </delete>
+
+    <delete id="delete">
+        DELETE
+        FROM doddle_queue
+        WHERE id = #{queue.id}
+    </delete>
+
+    <insert id="create">
+        INSERT INTO doddle_queue (id, name, priority, locked_at)
+        VALUES (#{queue.id},
+                #{queue.name},
+                #{queue.priority},
+                #{queue.lockedAt}) RETURNING id, name, priority, locked_at
+    </insert>
+
+    <update id="update">
+        UPDATE doddle_queue
+        SET name     = #{queue.name},
+            priority = #{queue.priority},
+            locked_at   = #{queue.lockedAt}
+        WHERE id = #{queue.id}
+    </update>
+
+    <!-- Mapping from columns to properties and vice versa -->
+    <resultMap type="dev.doddle.storage.common.domain.Queue" id="resultMap">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="priority" column="priority"/>
+        <result property="lockedAt" column="locked_at"/>
+    </resultMap>
+
+</mapper>

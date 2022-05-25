@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>dev.doddle</groupId>
+    <artifactId>application</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <url>https://github.com/jamhall/doddle</url>
+    <modules>
+        <module>modules/common</module>
+        <module>modules/core</module>
+        <module>modules/storage/common</module>
+        <module>modules/storage/sql</module>
+        <module>modules/web</module>
+    </modules>
+    <packaging>pom</packaging>
+    <description>Simple, efficient background processing for Java</description>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.target>15</maven.compiler.target>
+        <maven.compiler.source>15</maven.compiler.source>
+        <!-- Maven plugins dependency versions -->
+        <license-maven-plugin.version>3.0</license-maven-plugin.version>
+        <!-- End maven plugins dependency versions -->
+        <!-- Dependency versions -->
+        <commons-lang.version>3.12.0</commons-lang.version>
+        <jackson.version>2.13.2</jackson.version>
+        <junit-jupiter-api.version>5.8.2</junit-jupiter-api.version>
+        <junit-jupiter-engine.version>5.8.2</junit-jupiter-engine.version>
+        <junit-jupiter-params.version>5.8.2</junit-jupiter-params.version>
+        <log4j.version>2.17.1</log4j.version>
+        <mockito.version>1.10.19</mockito.version>
+        <findbugs.version>3.0.2</findbugs.version>
+        <jetty.version>9.4.35.v20201120</jetty.version>
+        <jakarta-servlet-api.version>5.0.0</jakarta-servlet-api.version>
+        <vertx-web.version>4.2.6</vertx-web.version>
+        <!-- End dependency versions -->
+    </properties>
+    <developers>
+        <developer>
+            <id>jamhall</id>
+            <name>Jamie Hall</name>
+            <email>hello@jamiehall.eu</email>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+        </developer>
+    </developers>
+    <dependencies>
+        <!-- Common dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit-jupiter-api.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit-jupiter-engine.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>${junit-jupiter-params.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang.version}</version>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>15</source>
+                    <target>15</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <!--
+                    Plugin to check that all source files have the appropriate open source license header.
+                    This will fail the build if any source files don't have the open source license header.
+                    To actually apply the header to new source files, run: mvn license:format
+                -->
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>${license-maven-plugin.version}</version>
+                <configuration>
+                    <header>etc/header.txt</header>
+                    <excludes>
+                        <exclude>src/test/resources/**</exclude>
+                        <exclude>modules/core/src/main/java/dev/doddle/core/support/CronExpression.java</exclude>
+                        <exclude>modules/core/src/main/java/dev/doddle/core/support/CronFieldParser.java</exclude>
+                        <exclude>modules/core/src/main/java/dev/doddle/core/support/CronFieldType.java</exclude>
+                        <exclude>**/LICENSE.txt</exclude>
+                        <exclude>etc/</exclude>
+                        <exclude>docs/</exclude>
+                        <exclude>examples/</exclude>
+                        <exclude>settings.xml</exclude>
+                        <exclude>.github/workflows/maven.yml</exclude>
+                        <exclude>.editorconfig</exclude>
+                        <exclude>*.env</exclude>
+                        <exclude>*.gitkeep</exclude>
+                        <exclude>*.dbml</exclude>
+                        <exclude>pom.xml</exclude>
+                    </excludes>
+                    <strictCheck>true</strictCheck>
+                    <mapping>
+                        <g4>JAVADOC_STYLE</g4>
+                    </mapping>
+                    <headerDefinitions>
+                        <headerDefinition>etc/headers.xml</headerDefinition>
+                    </headerDefinitions>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>3.9.1</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>3.1.1</version>
+            </plugin>
+        </plugins>
+    </build>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <version>3.0.5</version>
+                <configuration>
+                    <!--
+                        Enables analysis which takes more memory but finds more bugs.
+                        If you run out of memory, changes the value of the effort element
+                        to 'low'.
+                    -->
+                    <effort>Max</effort>
+                    <!-- Reports all bugs (other values are medium and max) -->
+                    <threshold>Low</threshold>
+                    <!-- Produces XML report -->
+                    <xmlOutput>true</xmlOutput>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </reporting>
+
+</project>
