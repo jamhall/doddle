@@ -4,7 +4,7 @@ Doddle is a *background job system* designed to make scheduling jobs in Java *as
 
 > It is currently a WIP, it is not stable or ready to be used in any production setting.
 
-# Quick overfiew
+## Quick overview
 
 Out-the-box, Doddle comes with the following features:
 
@@ -40,6 +40,6 @@ public void processOrders(final ExecutionContext context) {
 ```
 
 
-# Getting started
+## Getting started
 
 Documentation can be found [here](https://jamhall.gitbook.io/doddle/).
