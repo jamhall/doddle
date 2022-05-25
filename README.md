@@ -19,19 +19,20 @@ Out-the-box, Doddle comes with the following features:
  - Circuit breaker to protect the underlying storage layer
  - Telemetry (listen to jobs events such as job created, executing, failed etc.)
  - Job progress and logging
+ - Web dashboard (in progress!)
 
 Example:
 
 ```java
 @Task()
 public void processOrders(final ExecutionContext context) {
-	final var tenantId = context.argument("tenantId").asString();
-	final var orders = orderService.getOrdersForTenantId(tenantId);
+    final var tenantId = context.argument("tenantId").asString();
+    final var orders = orderService.getOrdersForTenantId(tenantId);
     final var progress = context.progress(orders.size());
     // let's process some orders!
     for (final var order: orders) {
-	    orderService.process(order);
-	    progress.advance();
+	orderService.process(order);
+	progress.advance();
         context.logger.info("Currently processed {}% of orders", progress.percentage());
     }
     context.logger.info("Finished processing orders");
